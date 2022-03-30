@@ -29,7 +29,7 @@ class ParticleFilter:
     init_noise = [2., 2., np.pi]
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
     particle_noise = [0.5,0.5,0.2]
-    odom_noise = [0.5,0.5,0.2]
+    odom_noise = [0,0,0]#[0.5,0.5,0.2]
     initial_offset = 0.0
     
 
