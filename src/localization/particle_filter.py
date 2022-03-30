@@ -19,8 +19,6 @@ from geometry_msgs.msg import PoseArray
 
 
 class ParticleFilter:
-    hardware = True
-
     # Jank as hell thread safety
     lidar_lock = True
     odom_lock = True
@@ -37,6 +35,7 @@ class ParticleFilter:
 
     def __init__(self):
         # Get parameters
+        self.hardware = rospy.get_param("~hardware", False)
         self.particle_filter_frame = rospy.get_param("~particle_filter_frame")
         self.num_particles = rospy.get_param("~num_particles")
         self.num_beams_per_particle = rospy.get_param("~num_beams_per_particle")

@@ -1,3 +1,5 @@
+hardware: False
+
 # A reasonable number to start with
 num_particles: 200
 
