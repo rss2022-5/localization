@@ -28,7 +28,7 @@ class ParticleFilter:
     # TODO: tune! This is the noise that sets the starting cloud
     init_noise = [2., 2., np.pi]
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
-    particle_noise = [0.5,0.5,0.2]
+    particle_noise = [0.5,0.05,0.2]
     odom_noise = [0.01,0.01,0.01]
     
 
@@ -163,11 +163,17 @@ class ParticleFilter:
 
             # add noise
             if not self.deterministic:
-                # c = np.cos(theta_old) # column of all cos's of thetas
-                # s = np.sin(theta_old) # column of all sin's of thetas
+                theta = self.particles[:,2]
+                c = np.cos(theta) # column of all cos's of thetas
+                s = np.sin(theta) # column of all sin's of thetas
+                noise = self.generate_noise(self.particle_noise)
 
+                noise_x = np.reshape( noise[:,0]*c - noise[:,1]*s ,self.num_particles)
+                noise_y = np.reshape( noise[:,0]*s + noise[:,1]*c ,self.num_particles)
 
-                self.particles += self.generate_noise(self.particle_noise)
+                noise = np.transpose([noise_x, noise_y, noise[:,2]])
+
+                self.particles += noise
 
             # publish results
             self.publish_poses()
