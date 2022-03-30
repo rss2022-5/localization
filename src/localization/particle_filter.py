@@ -28,8 +28,9 @@ class ParticleFilter:
     # TODO: tune! This is the noise that sets the starting cloud
     init_noise = [2., 2., np.pi]
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
-    particle_noise = [0.5,0.05,0.2]
-    odom_noise = [0.01,0.01,0.01]
+    particle_noise = [0.5,0.5,0.2]
+    odom_noise = [0.5,0.5,0.2]
+    initial_offset = 0.5
     
 
     def __init__(self):
@@ -76,6 +77,7 @@ class ParticleFilter:
         #     "/map" frame.
         self.odom_pub  = rospy.Publisher("/pf/pose/odom", Odometry, queue_size = 1)
         self.cloud_pub  = rospy.Publisher("/pf/pose/cloud", PoseArray, queue_size = 1)
+        self.listener = tf.TransformListener()
         
         # Initialize the models
         self.motion_model = MotionModel()
@@ -94,6 +96,11 @@ class ParticleFilter:
         #
         # Publish a transformation frame between the map
         # and the particle_filter_frame.
+        self.s = "/home/racecar/error_log_localization.csv"
+
+        with open(self.s, "w") as self.error_log:
+            self.error_log.write("")
+        self.error_log = open(self.s, "a")
     
     def lidar_callback(self, data):
 
@@ -183,6 +190,21 @@ class ParticleFilter:
             traceback.print_exc()
         finally:
             self.odom_lock = False
+    
+    def log_error(self):
+        self.listener.waitForTransform("base_link", "map", rospy.Time(), rospy.Duration(4.0))
+        t = self.listener.getLatestCommonTime("base_link", "map")
+        exp_position, exp_quaternion = self.listener.lookupTransform("base_link", "map", t)
+        exp_angle = tf.transformations.euler_from_quaternion(exp_quaternion)[2]
+        act_position = [self.avg_x, self.avg_y, 0]
+        act_angle = self.avg_theta
+        x_offset = act_position[0]-exp_position[0]
+        y_offset = act_position[1]-exp_position[1]
+        theta_offset = act_angle-exp_angle
+        self.error_log.write(str(rospy.get_rostime())+",")
+        self.error_log.write(str(x_offset)+",")
+        self.error_log.write(str(y_offset)+",")
+        self.error_log.write(str(theta_offset)+","+"\n")
 
     def pose_init_callback(self, data):
         # Pull position from data
@@ -197,7 +219,9 @@ class ParticleFilter:
         # c_x = covariance[0]      +1
         # c_y = covariance[1]      +1
         # c_theta = covariance[5]  +1
-        
+
+        #add some initial offset
+        self.particles.y += initial_offset
         # Combine to set particle array
         noise = self.generate_noise(self.init_noise)
         self.particles = noise + center_particle
@@ -210,28 +234,29 @@ class ParticleFilter:
 
     def publish_poses(self):
         # publish the average point
-        avg_x = np.mean(self.particles[:,0])
-        avg_y = np.mean(self.particles[:,1])
-        avg_theta = scipy.stats.circmean(self.particles[:,2])
+        self.avg_x = np.mean(self.particles[:,0])
+        self.avg_y = np.mean(self.particles[:,1])
+        self.avg_theta = scipy.stats.circmean(self.particles[:,2])
         
         msg = Odometry()
         msg.header.stamp = rospy.get_rostime()
         msg.header.frame_id = "map"
         # msg.child_frame_id = ""
-        msg.pose.pose.position.x = avg_x
-        msg.pose.pose.position.y = avg_y
+        msg.pose.pose.position.x = self.avg_x
+        msg.pose.pose.position.y = self.avg_y
         msg.pose.pose.position.z = 0
-        quat = tf.transformations.quaternion_from_euler(0,0,avg_theta)
+        quat = tf.transformations.quaternion_from_euler(0,0,self.avg_theta)
         msg.pose.pose.orientation.x = quat[0]
         msg.pose.pose.orientation.y = quat[1]
         msg.pose.pose.orientation.z = quat[2]
         msg.pose.pose.orientation.w = quat[3]
         self.odom_pub.publish(msg)
+        self.log_error()
 
         # Publish transform
         br = tf.TransformBroadcaster()
-        br.sendTransform((avg_x, avg_y, 0),
-            tf.transformations.quaternion_from_euler(0, 0, avg_theta),
+        br.sendTransform((self.avg_x, self.avg_y, 0),
+            tf.transformations.quaternion_from_euler(0, 0, self.avg_theta),
             rospy.Time.now(),
             self.particle_filter_frame,
             "map")
@@ -253,7 +278,7 @@ class ParticleFilter:
             msg.poses[i].orientation.z = quat[2]
             msg.poses[i].orientation.w = quat[3]
         self.cloud_pub.publish(msg)
-        
+
 
 if __name__ == "__main__":
     rospy.init_node("particle_filter")
