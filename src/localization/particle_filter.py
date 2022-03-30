@@ -225,6 +225,8 @@ class ParticleFilter:
         # Combine to set particle array
         noise = self.generate_noise(self.init_noise)
         self.particles = noise + center_particle
+
+        self.publish_poses()
     
     def generate_noise(self, weights):
         noise = np.random.normal(size=[self.num_particles, 3])
@@ -256,7 +258,7 @@ class ParticleFilter:
         br.sendTransform((self.avg_x, self.avg_y, 0),
             tf.transformations.quaternion_from_euler(0, 0, self.avg_theta),
             rospy.Time.now(),
-            "base_link_pf",
+            self.particle_filter_frame,
             "map")
 
         # Publish all the particles
