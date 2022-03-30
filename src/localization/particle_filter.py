@@ -221,7 +221,7 @@ class ParticleFilter:
         # c_theta = covariance[5]  +1
 
         #add some initial offset
-        self.particles.y += initial_offset
+        self.particles[:,1] += initial_offset
         # Combine to set particle array
         noise = self.generate_noise(self.init_noise)
         self.particles = noise + center_particle
