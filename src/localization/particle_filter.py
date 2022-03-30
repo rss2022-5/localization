@@ -5,6 +5,9 @@ from sensor_model import SensorModel
 from motion_model import MotionModel
 
 import numpy as np
+import scipy
+from scipy.stats import circmean
+
 import traceback
 import tf
 
@@ -12,8 +15,6 @@ from sensor_msgs.msg import  LaserScan
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from geometry_msgs.msg import Pose
-import scipy
-from scipy.stats import circmean
 from geometry_msgs.msg import PoseArray
 
 
@@ -163,7 +164,17 @@ class ParticleFilter:
 
             # add noise
             if not self.deterministic:
-                self.particles += self.generate_noise(self.particle_noise)
+                theta = self.particles[:,2]
+                c = np.cos(theta) # column of all cos's of thetas
+                s = np.sin(theta) # column of all sin's of thetas
+                noise = self.generate_noise(self.particle_noise)
+
+                noise_x = np.reshape( noise[:,0]*c - noise[:,1]*s ,self.num_particles)
+                noise_y = np.reshape( noise[:,0]*s + noise[:,1]*c ,self.num_particles)
+
+                noise = np.transpose([noise_x, noise_y, noise[:,2]])
+
+                self.particles += noise
 
             # publish results
             self.publish_poses()
@@ -187,7 +198,7 @@ class ParticleFilter:
         # c_x = covariance[0]      +1
         # c_y = covariance[1]      +1
         # c_theta = covariance[5]  +1
-        
+
         #add some initial offset
         self.particles.y += initial_offset
         # Combine to set particle array

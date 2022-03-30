@@ -3,16 +3,14 @@ from scan_simulator_2d import PyScanSimulator2D
 
 import rospy
 import tf
-from nav_msgs.msg import OccupancyGrid
 from tf.transformations import quaternion_from_euler
 
-from test_init import *
-from mpl_toolkits.mplot3d import axes3d
-import matplotlib.pyplot as plt
+from nav_msgs.msg import OccupancyGrid
+# from test_init import *
+# from mpl_toolkits.mplot3d import axes3d
+# import matplotlib.pyplot as plt
 
 class SensorModel:
-
-
     def __init__(self):
         # Fetch parameters
         self.map_topic = rospy.get_param("~map_topic", "/map")
