@@ -96,7 +96,7 @@ class ParticleFilter:
         #
         # Publish a transformation frame between the map
         # and the particle_filter_frame.
-        self.s = "/home/racecar/error_log_localization.csv"
+        self.s = "/home/racecar/error_log_real_1.csv"
 
         with open(self.s, "w") as self.error_log:
             self.error_log.write("")
@@ -202,9 +202,9 @@ class ParticleFilter:
         y_offset = act_position[1]-exp_position[1]
         theta_offset = act_angle-exp_angle
         self.error_log.write(str(rospy.get_rostime())+",")
-        self.error_log.write(str(x_offset)+",")
-        self.error_log.write(str(y_offset)+",")
-        self.error_log.write(str(theta_offset)+","+"\n")
+        self.error_log.write(str(act_position[0])+",") #x_offset
+        self.error_log.write(str(act_position[1])+",") #y_offset
+        self.error_log.write(str(act_angle)+","+"\n") #theta_offset
 
     def pose_init_callback(self, data):
         # Pull position from data
