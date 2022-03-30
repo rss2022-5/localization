@@ -30,7 +30,7 @@ class ParticleFilter:
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
     particle_noise = [0.5,0.5,0.2]
     odom_noise = [0.5,0.5,0.2]
-    initial_offset = 5
+    initial_offset = 0.5
     
 
     def __init__(self):
