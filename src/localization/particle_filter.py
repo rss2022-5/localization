@@ -29,6 +29,7 @@ class ParticleFilter:
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
     particle_noise = [0.5,0.5,0.2]
     odom_noise = [0.5,0.5,0.2]
+    initial_offset = 5
     
 
     def __init__(self):
@@ -187,6 +188,8 @@ class ParticleFilter:
         # c_y = covariance[1]      +1
         # c_theta = covariance[5]  +1
         
+        #add some initial offset
+        self.particles.y += initial_offset
         # Combine to set particle array
         noise = self.generate_noise(self.init_noise)
         self.particles = noise + center_particle
