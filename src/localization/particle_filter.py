@@ -97,7 +97,7 @@ class ParticleFilter:
         #
         # Publish a transformation frame between the map
         # and the particle_filter_frame.
-        self.s = "/home/racecar/error_log_real_1.csv"
+        self.s = "/home/racecar/error_log_circle_1.csv"
 
         with open(self.s, "w") as self.error_log:
             self.error_log.write("")
