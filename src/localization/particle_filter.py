@@ -19,6 +19,8 @@ from geometry_msgs.msg import PoseArray
 
 
 class ParticleFilter:
+    hardware = True
+
     # Jank as hell thread safety
     lidar_lock = True
     odom_lock = True
@@ -30,7 +32,7 @@ class ParticleFilter:
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
     particle_noise = [0.5,0.5,0.2]
     odom_noise = [0.5,0.5,0.2]
-    initial_offset = 0.5
+    initial_offset = 0.0
     
 
     def __init__(self):
@@ -202,9 +204,15 @@ class ParticleFilter:
         y_offset = act_position[1]-exp_position[1]
         theta_offset = act_angle-exp_angle
         self.error_log.write(str(rospy.get_rostime())+",")
-        self.error_log.write(str(act_position[0])+",") #x_offset
-        self.error_log.write(str(act_position[1])+",") #y_offset
-        self.error_log.write(str(act_angle)+","+"\n") #theta_offset
+        self.error_log.write(str(x_offset)+",") #x_offset
+        self.error_log.write(str(y_offset)+",") #y_offset
+        self.error_log.write(str(theta_offset)+","+"\n") #theta_offset
+
+    def log_error_hardware(self, x ,y ,theta):
+        self.error_log.write(str(rospy.get_rostime())+",")
+        self.error_log.write(str(x)+",") #x_offset
+        self.error_log.write(str(y)+",") #y_offset
+        self.error_log.write(str(theta)+","+"\n") #theta_offset
 
     def pose_init_callback(self, data):
         # Pull position from data
@@ -241,7 +249,7 @@ class ParticleFilter:
         msg = Odometry()
         msg.header.stamp = rospy.get_rostime()
         msg.header.frame_id = "map"
-        # msg.child_frame_id = ""
+        msg.child_frame_id = self.particle_filter_frame
         msg.pose.pose.position.x = self.avg_x
         msg.pose.pose.position.y = self.avg_y
         msg.pose.pose.position.z = 0
@@ -251,7 +259,6 @@ class ParticleFilter:
         msg.pose.pose.orientation.z = quat[2]
         msg.pose.pose.orientation.w = quat[3]
         self.odom_pub.publish(msg)
-        self.log_error()
 
         # Publish transform
         br = tf.TransformBroadcaster()
@@ -261,6 +268,10 @@ class ParticleFilter:
             self.particle_filter_frame,
             "map")
 
+        if not self.hardware:
+            self.log_error()
+        else:
+            self.log_error_hardware(self.avg_x, self.avg_y, self.avg_theta)
         # Publish all the particles
         msg = PoseArray()
 
