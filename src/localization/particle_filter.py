@@ -26,9 +26,10 @@ class ParticleFilter:
 
 
     # TODO: tune! This is the noise that sets the starting cloud
-    init_noise = [2., 2., np.pi]
+    # init_noise = [0.5, 0.5, np.pi/3]
+    init_noise = [0,0,0]
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
-    particle_noise = [0.5,0.5,0.2]
+    particle_noise = [0.1,0.01,0.04]
     odom_noise = [0,0,0]#[0.5,0.5,0.2]
     initial_offset = 0.0
     
@@ -97,14 +98,14 @@ class ParticleFilter:
         #
         # Publish a transformation frame between the map
         # and the particle_filter_frame.
-        self.s = "/home/racecar/error_log_circle_1.csv"
+        self.s = "/home/racecar/final_location2.csv"
+        # self.s = "/home/racecar/error_log_circle_1.csv"
 
         with open(self.s, "w") as self.error_log:
             self.error_log.write("")
-        self.error_log = open(self.s, "a")
+        
     
     def lidar_callback(self, data):
-
         # an instance of the odom function is already running, wait for it to finish
         while self.odom_lock:
             rospy.sleep(0.001)
@@ -158,7 +159,7 @@ class ParticleFilter:
         try:
             # find delta time
             time = rospy.get_time()
-            dt = time - self.odom_prev_time
+            dt = np.min( [time - self.odom_prev_time, 0.2] )
             self.odom_prev_time = time
 
             # get odom
@@ -202,18 +203,23 @@ class ParticleFilter:
         x_offset = act_position[0]-exp_position[0]
         y_offset = act_position[1]-exp_position[1]
         theta_offset = act_angle-exp_angle
-        self.error_log.write(str(rospy.get_rostime())+",")
-        self.error_log.write(str(x_offset)+",") #x_offset
-        self.error_log.write(str(y_offset)+",") #y_offset
-        self.error_log.write(str(theta_offset)+","+"\n") #theta_offset
+
+        with open(self.s, "a") as self.error_log:
+            self.error_log.write(str(rospy.get_rostime())+",")
+            self.error_log.write(str(x_offset)+",") #x_offset
+            self.error_log.write(str(y_offset)+",") #y_offset
+            self.error_log.write(str(theta_offset)+","+"\n") #theta_offset
 
     def log_error_hardware(self, x ,y ,theta):
-        self.error_log.write(str(rospy.get_rostime())+",")
-        self.error_log.write(str(x)+",") #x_offset
-        self.error_log.write(str(y)+",") #y_offset
-        self.error_log.write(str(theta)+","+"\n") #theta_offset
+        with open(self.s, "a") as self.error_log:
+            self.error_log.write(str(rospy.get_rostime())+",")
+            self.error_log.write(str(x)+",") #x_offset
+            self.error_log.write(str(y)+",") #y_offset
+            self.error_log.write(str(theta)+","+"\n") #theta_offset
 
     def pose_init_callback(self, data):
+        rospy.logwarn("relocating")
+
         # Pull position from data
         pose = data.pose.pose
         q = pose.orientation
@@ -232,7 +238,6 @@ class ParticleFilter:
         # Combine to set particle array
         noise = self.generate_noise(self.init_noise)
         self.particles = noise + center_particle
-
         self.publish_poses()
     
     def generate_noise(self, weights):
@@ -271,6 +276,7 @@ class ParticleFilter:
             self.log_error()
         else:
             self.log_error_hardware(self.avg_x, self.avg_y, self.avg_theta)
+
         # Publish all the particles
         msg = PoseArray()
 
@@ -295,5 +301,3 @@ if __name__ == "__main__":
     pf = ParticleFilter()
     # rospy.sleep(3)
     rospy.spin()
-    # while not rospy.is_shutdown():
-    #     rospy.sleep(0.5)
