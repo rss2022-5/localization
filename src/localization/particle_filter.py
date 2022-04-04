@@ -98,10 +98,16 @@ class ParticleFilter:
         # Publish a transformation frame between the map
         # and the particle_filter_frame.
         self.s = "/home/racecar/error_log_circle_1.csv"
+        #another file for logging odometry data
+        self.a = "/home/racecar/gt_log_circle_1.csv"
 
         with open(self.s, "w") as self.error_log:
             self.error_log.write("")
         self.error_log = open(self.s, "a")
+
+        with open(self.a, "w") as self.gt_log:
+            self.gt_log.write("")
+        self.gt_log = open(self.a, "a")
     
     def lidar_callback(self, data):
 
@@ -166,6 +172,8 @@ class ParticleFilter:
             odom[0] += np.random.normal()*self.odom_noise[0]
             odom[1] += np.random.normal()*self.odom_noise[1]
             odom[2] += np.random.normal()*self.odom_noise[2]
+            #record the odometry data
+            self.log_ground_truth(odom)
             # update the point cloud
             self.particles = self.motion_model.evaluate(self.particles, odom)
 
@@ -191,6 +199,7 @@ class ParticleFilter:
             traceback.print_exc()
         finally:
             self.odom_lock = False
+        
     
     def log_error(self):
         self.listener.waitForTransform("base_link", "map", rospy.Time(), rospy.Duration(4.0))
@@ -212,6 +221,12 @@ class ParticleFilter:
         self.error_log.write(str(x)+",") #x_offset
         self.error_log.write(str(y)+",") #y_offset
         self.error_log.write(str(theta)+","+"\n") #theta_offset
+
+    def log_ground_truth(self, odom):
+        self.gt_log.write(str(rospy.get_rostime())+",")
+        self.gt_log.write(str(odom[0])+",") #x_offset
+        self.gt_log.write(str(odom[1])+",") #y_offset
+        self.gt_log.write(str(odom[2])+","+"\n") #theta_offset
 
     def pose_init_callback(self, data):
         # Pull position from data
