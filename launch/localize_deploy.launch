@@ -9,11 +9,12 @@
   </node> -->
 
   <node pkg="tf" type="static_transform_publisher" name="lidar_tf_publisher" args="0.05 0 0 0 0 0 base_link laser 100">
-    <!-- <rosparam param="use_sim_time" >true</rosparam> -->
+    <!-- <rosparam param="/use_sim_time" >True</rosparam> -->
   </node>
   <!-- <node pkg="localization" type="fuck.py" name="transform_stupidity" output="screen"/> -->
 
   <node pkg="localization" type="particle_filter.py" name="particle_filter" output="screen">
     <rosparam command="load" file="$(find localization)/params_deploy.yaml"/>
+    <!-- <rosparam param="/use_sim_time" >True</rosparam> -->
   </node>
 </launch>
