@@ -27,7 +27,8 @@ class ParticleFilter:
 
     # TODO: tune! This is the noise that sets the starting cloud
     # init_noise = [0.5, 0.5, np.pi/3]
-    init_noise = [0,0,0]
+    init_noise = [0.5,0.5,np.pi/6]
+
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
     particle_noise = [0.1,0.01,0.04]
     odom_noise = [0,0,0]#[0.5,0.5,0.2]
@@ -100,7 +101,6 @@ class ParticleFilter:
         # and the particle_filter_frame.
 
         self.s = "/home/racecar/final_location2.csv"
-        # self.s = "/home/racecar/error_log_circle_1.csv"
 
         with open(self.s, "w") as self.error_log:
             self.error_log.write("")
@@ -168,7 +168,7 @@ class ParticleFilter:
             odom[1] += np.random.normal()*self.odom_noise[1]
             odom[2] += np.random.normal()*self.odom_noise[2]
             #record the odometry data
-            self.log_ground_truth(odom)
+            # self.log_ground_truth(odom)
             # update the point cloud
             self.particles = self.motion_model.evaluate(self.particles, odom)
 
@@ -220,14 +220,14 @@ class ParticleFilter:
             self.error_log.write(str(y)+",") #y_offset
             self.error_log.write(str(theta)+","+"\n") #theta_offset
 
-    def log_ground_truth(self, odom):
-        self.gt_log.write(str(rospy.get_rostime())+",")
-        self.gt_log.write(str(odom[0])+",") #x_offset
-        self.gt_log.write(str(odom[1])+",") #y_offset
-        self.gt_log.write(str(odom[2])+","+"\n") #theta_offset
+    # def log_ground_truth(self, odom):
+    #     self.gt_log.write(str(rospy.get_rostime())+",")
+    #     self.gt_log.write(str(odom[0])+",") #x_offset
+    #     self.gt_log.write(str(odom[1])+",") #y_offset
+    #     self.gt_log.write(str(odom[2])+","+"\n") #theta_offset
 
     def pose_init_callback(self, data):
-        rospy.logwarn("relocating")
+        rospy.loginfo("relocating")
 
         # Pull position from data
         pose = data.pose.pose
