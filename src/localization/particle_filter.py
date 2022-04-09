@@ -81,6 +81,7 @@ class ParticleFilter:
         self.odom_pub  = rospy.Publisher("/pf/pose/odom", Odometry, queue_size = 1)
         self.cloud_pub  = rospy.Publisher("/pf/pose/cloud", PoseArray, queue_size = 1)
         self.listener = tf.TransformListener()
+        self.br = tf.TransformBroadcaster()
         
         # Initialize the models
         self.motion_model = MotionModel()
@@ -227,7 +228,7 @@ class ParticleFilter:
     #     self.gt_log.write(str(odom[2])+","+"\n") #theta_offset
 
     def pose_init_callback(self, data):
-        rospy.loginfo("relocating")
+        rospy.logwarn("relocating")
 
         # Pull position from data
         pose = data.pose.pose
@@ -274,12 +275,10 @@ class ParticleFilter:
         self.odom_pub.publish(msg)
 
         # Publish transform
-        br = tf.TransformBroadcaster()
-        br.sendTransform((self.avg_x, self.avg_y, 0),
+        self.br.sendTransform((self.avg_x, self.avg_y, 0),
             tf.transformations.quaternion_from_euler(0, 0, self.avg_theta),
             rospy.Time.now(),
-            self.particle_filter_frame,
-            "map")
+            self.particle_filter_frame, "map")
 
         if not self.hardware:
             self.log_error()
