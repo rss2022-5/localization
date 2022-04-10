@@ -28,11 +28,11 @@ class ParticleFilter:
     # TODO: tune! This is the noise that sets the starting cloud
     # init_noise = [0.5, 0.5, np.pi/3]
     # init_noise = [0.5,0.5,np.pi/6]
-    init_noise = [0,0,0]
+    init_noise = [0.2,0.2,0.05]
 
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
-    # particle_noise = [0.1,0.01,0.04]
-    particle_noise = [0,0,0]
+    particle_noise = [0.1,0.01,0.04]
+    # particle_noise = [0,0,0]
     odom_noise = [0,0,0]#[0.5,0.5,0.2]
     initial_offset = 0.0
     

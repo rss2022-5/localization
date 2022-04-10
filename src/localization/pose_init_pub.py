@@ -22,4 +22,4 @@ if __name__ == "__main__":
     msg.pose.pose.orientation.w = o[3]
 
     pub.publish(msg)
-    rospy.spin()
+    rospy.sleep(10)
