@@ -31,9 +31,9 @@ class ParticleFilter:
     init_noise = [0.2,0.2,0.05]
 
     # TODO: tune! This is the noise that shifts our points around when processing odometry particle
-    particle_noise = [0.1,0.01,0.04]
+    particle_noise = [0.2,0.1,0.075]
     # particle_noise = [0,0,0]
-    odom_noise = [0,0,0]#[0.5,0.5,0.2]
+    odom_noise = [0,0,0] # [0.5,0.5,0.2]
     initial_offset = 0.0
     
 
@@ -91,6 +91,7 @@ class ParticleFilter:
 
         self.odom_prev_time = rospy.get_time()
         self.particles = np.zeros([self.num_particles,3])
+        self.probabilities = np.ones(self.num_particles) / self.num_particles
         self.lidar_lock = False
         self.odom_lock = False
         # Implement the MCL algorithm
@@ -102,11 +103,12 @@ class ParticleFilter:
         #
         # Publish a transformation frame between the map
         # and the particle_filter_frame.
+        self.logging = False
+        if self.logging:
+            self.s = "/home/racecar/final_location2.csv"
 
-        self.s = "/home/racecar/final_location2.csv"
-
-        with open(self.s, "w") as self.error_log:
-            self.error_log.write("")
+            with open(self.s, "w") as self.error_log:
+                self.error_log.write("")
     
     def lidar_callback(self, data):
         # an instance of the odom function is already running, wait for it to finish
@@ -140,8 +142,9 @@ class ParticleFilter:
             # compute probabilities
             probabilities = self.sensor_model.evaluate(self.particles, observation)
             
-            # normalize
+            # normalize and save
             probabilities = probabilities / np.sum(probabilities)
+            self.probabilities = probabilities
                     
             # resample point cloud
             particle_indices = np.random.choice(self.num_particles, p=probabilities, size=self.num_particles).astype(int)
@@ -202,6 +205,8 @@ class ParticleFilter:
         
     
     def log_error(self):
+        if not self.logging:
+            return
         self.listener.waitForTransform("base_link", "map", rospy.Time(), rospy.Duration(4.0))
         t = self.listener.getLatestCommonTime("base_link", "map")
         exp_position, exp_quaternion = self.listener.lookupTransform("base_link", "map", t)
@@ -219,6 +224,8 @@ class ParticleFilter:
             self.error_log.write(str(theta_offset)+","+"\n") #theta_offset
 
     def log_error_hardware(self, x ,y ,theta):
+        if not self.logging:
+            return
         with open(self.s, "a") as self.error_log:
             self.error_log.write(str(rospy.get_rostime())+",")
             self.error_log.write(str(x)+",") #x_offset
@@ -241,12 +248,6 @@ class ParticleFilter:
         theta = tf.transformations.euler_from_quaternion([q.x, q.y, q.z, q.w])[2]
         center_particle = [pose.position.x, pose.position.y, theta]
 
-        # Pull covariance from data
-        # covariance = data.pose.covariance
-        # c_x = covariance[0]      +1
-        # c_y = covariance[1]      +1
-        # c_theta = covariance[5]  +1
-
         #add some initial offset
         self.particles[:,1] += self.initial_offset
         # Combine to set particle array
@@ -260,10 +261,14 @@ class ParticleFilter:
 
     def publish_poses(self):
         # publish the average point
-        self.avg_x = np.mean(self.particles[:,0])
-        self.avg_y = np.mean(self.particles[:,1])
-        self.avg_theta = scipy.stats.circmean(self.particles[:,2])
+        self.avg_x = np.average(self.particles[:,0], weights=self.probabilities)
+        self.avg_y = np.average(self.particles[:,1], weights=self.probabilities)
+        # self.avg_theta = scipy.stats.circmean(self.particles[:,2], weights=self.probabilities)
         
+        avg_x_theta = np.average(np.cos(self.particles[:,2]), weights=self.probabilities)
+        avg_y_theta = np.average(np.sin(self.particles[:,2]), weights=self.probabilities)
+        self.avg_theta = np.arctan2(avg_y_theta, avg_x_theta)
+
         msg = Odometry()
         msg.header.stamp = rospy.get_rostime()
         msg.header.frame_id = "map"
@@ -284,10 +289,11 @@ class ParticleFilter:
             rospy.Time.now(),
             self.particle_filter_frame, "map")
 
-        if not self.hardware:
-            self.log_error()
-        else:
-            self.log_error_hardware(self.avg_x, self.avg_y, self.avg_theta)
+        if self.logging:
+            if not self.hardware:
+                self.log_error()
+            else:
+                self.log_error_hardware(self.avg_x, self.avg_y, self.avg_theta)
 
         # Publish all the particles
         msg = PoseArray()
