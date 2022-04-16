@@ -23,8 +23,14 @@ odom_topic: "/odom"
 # The frame you should publish your transform to
 particle_filter_frame: "/base_link_pf"
 
+angle_step: 1
+
+do_viz: True
+max_viz_particles: 60
 # Deterministic flag; set to true to remove all added noise
 deterministic: false
+
+squash_factor: 2.2
 
 # Lidar Scale
 lidar_scale_to_map_scale: 1.0
