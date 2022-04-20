@@ -1,5 +1,5 @@
 import numpy as np
-from scan_simulator_2d import PyScanSimulator2D
+from localization.scan_simulator_2d import PyScanSimulator2D
 
 import rospy
 import tf

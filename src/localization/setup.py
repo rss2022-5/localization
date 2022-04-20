@@ -24,7 +24,7 @@ for path in ros_package_paths.split(":"):
 
 extensions = [
         Extension(
-            "scan_simulator_2d",
+            "localization.scan_simulator_2d",
             ["scan_simulator_2d.pyx"],
             libraries=["racecar_simulator"],
             include_dirs=include_dirs,
